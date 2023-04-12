@@ -57,7 +57,7 @@ def rankn_mod(points, mask):
     rank_B = rankn_mod(B, mask[~idxA])
     rank = np.zeros(npoints, dtype=int)
     rank[idxA] = rank_A
-    rank[~idxA] = rank_B + rankn_mod(points[:,1:], mask)[~idxA] # this needs to be modified.  It computes the total rank, not just the dominated As.
+    rank[~idxA] = rank_B + rankn_mod(points[:,1:], idxA*mask)[~idxA] # this needs to be modified.  It computes the total rank, not just the dominated As.
     return rank
 
 def rankn(points):
@@ -94,7 +94,7 @@ if __name__ == "__main__":
     from matplotlib.pyplot import *
 
     npoints = 100
-    ndim = 3
+    ndim = 5
     points = (npoints*np.random.random((npoints, ndim)))
     s = time.time()
     rank = rankn(points)
