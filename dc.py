@@ -2,6 +2,26 @@ import numpy as np
 import time
 
 
+def rank2_mod(points, mask):
+    npoints = points.shape[0]
+    if npoints == 1:
+        return 0
+    else:
+        med = np.median(points[:,0])
+        idxA = points[:,0] <= med
+        A = points[idxA]
+        B = points[~idxA]
+        rank_A = rank2_mod(A, mask[idxA])
+        rank_B = rank2_mod(B, mask[~idxA])
+        idxY = np.argsort(points[:,1])
+        idxYr = np.zeros_like(idxY)
+        idxYr[idxY] = np.arange(idxY.shape[0]) # inverse of idxY
+        rank = np.zeros(npoints, dtype=int)
+        numA = np.cumsum((idxA*mask)[idxY])[idxYr]
+        rank[idxA] = rank_A
+        rank[~idxA] = rank_B + numA[~idxA]
+        return rank
+
 def rank2(points):
     npoints = points.shape[0]
     if npoints == 1:
@@ -21,7 +41,25 @@ def rank2(points):
         rank[idxA] = rank_A
         rank[~idxA] = rank_B + numA[~idxA]
         return rank
-    
+
+def rankn_mod(points, mask):
+    npoints = points.shape[0]
+    if npoints == 1:
+        return 0
+    else:
+        if points.shape[1] == 2:
+            return rank2_mod(points, mask)
+    med = np.median(points[:,0])
+    idxA = points[:,0] <= med
+    A = points[idxA]
+    B = points[~idxA]
+    rank_A = rankn_mod(A, mask[idxA])
+    rank_B = rankn_mod(B, mask[~idxA])
+    rank = np.zeros(npoints, dtype=int)
+    rank[idxA] = rank_A
+    rank[~idxA] = rank_B + rankn_mod(points[:,1:], mask)[~idxA] # this needs to be modified.  It computes the total rank, not just the dominated As.
+    return rank
+
 def rankn(points):
     npoints = points.shape[0]
     if npoints == 1:
@@ -37,7 +75,7 @@ def rankn(points):
     rank_B = rankn(B)
     rank = np.zeros(npoints, dtype=int)
     rank[idxA] = rank_A
-    rank[~idxA] = rank_B + rankn(points[:,1:])[~idxA]
+    rank[~idxA] = rank_B + rankn_mod(points[:,1:], idxA)[~idxA] # this needs to be modified.  It computes the total rank, not just the dominated As.
     return rank
     
 def naive(points):
@@ -55,8 +93,8 @@ if __name__ == "__main__":
 
     from matplotlib.pyplot import *
 
-    npoints = 100000
-    ndim = 2
+    npoints = 100
+    ndim = 3
     points = (npoints*np.random.random((npoints, ndim)))
     s = time.time()
     rank = rankn(points)
