@@ -8,8 +8,9 @@ def rank2(points, mask):
     if npoints == 1:
         return 0
     else:
-        med = np.median(points[:,0])
-        #med = np.partition(points[:,0], npoints // 2)[npoints // 2]
+        #med = np.median(points[:,0])
+        med = np.partition(points[:,0], npoints//2 - 1)[npoints//2 - 1]
+
         idxA = points[:,0] <= med
         rank_A = rank2(points[idxA], mask[idxA])
         rank_B = rank2(points[~idxA], mask[~idxA])
@@ -38,8 +39,8 @@ def rankn(points, mask=None):
     else:
         if points.shape[1] == 2:
             return rank2(points, mask)
-    med = np.median(points[:,0])
-    #med = np.partition(points[:,0], npoints // 2)[npoints // 2]
+    #med = np.median(points[:,0])
+    med = np.partition(points[:,0], npoints//2 - 1)[npoints//2 - 1]
     idxA = points[:,0] <= med
     A = points[idxA]
     B = points[~idxA]
@@ -68,8 +69,8 @@ if __name__ == "__main__":
 
     from matplotlib.pyplot import *
 
-    npoints = 1000
-    ndim = 5
+    npoints = 20000
+    ndim = 3
     points = (npoints*np.random.random((npoints, ndim)))
     s = time.time()
     rank = rankn(points)
