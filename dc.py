@@ -4,17 +4,17 @@ import time
 
 
 def rank2(points, mask):
-    npoints = points.shape[0]
-    if npoints == 1:
+    N = points.shape[0]
+    N2 = N//2
+    if N == 1:
         return 0
     else:
-        #med = np.median(points[:,0])
-        med = np.partition(points[:,0], npoints//2 - 1)[npoints//2 - 1]
-
-        idxA = points[:,0] <= med
+        idx = np.argpartition(points[:,0], N2)
+        idxA_ = idx[:N2]
+        idxA = np.zeros(N, dtype=bool)
+        idxA[idxA_] = True
         rank_A = rank2(points[idxA], mask[idxA])
         rank_B = rank2(points[~idxA], mask[~idxA])
-
         N_split = np.sum(idxA & mask)
         points_reduced = np.vstack((points[idxA & mask], points[~idxA & ~mask]))
         count_points = np.zeros(points_reduced.shape[0], dtype=bool)
@@ -24,38 +24,38 @@ def rank2(points, mask):
         idxYr[idxY] = np.arange(idxY.shape[0]) # inverse of idxY
         count_points = count_points[idxY]
         numA = np.cumsum(count_points)[idxYr]
-        rank = np.zeros(npoints)
+        rank = np.zeros(N)
         rank[idxA] = rank_A
         rank[~idxA] = rank_B
         rank[~idxA & ~mask] += numA[N_split:]
         return rank
 
 def rankn(points, mask=None):
-    npoints = points.shape[0]
+    N = points.shape[0]
+    N2 = N//2
     if mask is None:
-        mask = np.ones(npoints, dtype=bool)
-    if npoints == 1:
+        mask = np.ones(N, dtype=bool)
+    if N == 1:
         return 0
     else:
         if points.shape[1] == 2:
             return rank2(points, mask)
-    #med = np.median(points[:,0])
-    med = np.partition(points[:,0], npoints//2 - 1)[npoints//2 - 1]
-    idxA = points[:,0] <= med
-    A = points[idxA]
-    B = points[~idxA]
-    rank_A = rankn(A, mask[idxA])
-    rank_B = rankn(B, mask[~idxA])
-    rank = np.zeros(npoints, dtype=int)
+    idx = np.argpartition(points[:,0], N2)
+    idxA_ = idx[:N2]
+    idxA = np.zeros(N, dtype=bool)
+    idxA[idxA_] = True
+    rank_A = rankn(points[idxA], mask[idxA])
+    rank_B = rankn(points[~idxA], mask[~idxA])
+    rank = np.zeros(N, dtype=int)
     rank[idxA] = rank_A
     rank[~idxA] = rank_B + rankn(points[:,1:], idxA*mask)[~idxA] # this needs to be modified.  It computes the total rank, not just the dominated As.
     return rank
     
 def naive(points):
     # a naive O(n^2) Implementation for validation
-    npoints = points.shape[0]
-    rank = np.zeros(npoints, dtype=int)
-    for i in range(npoints):
+    N = points.shape[0]
+    rank = np.zeros(N, dtype=int)
+    for i in range(N):
         rank[i] = np.sum(np.all(points[i] > points, axis=1))
     return rank
 
@@ -69,9 +69,9 @@ if __name__ == "__main__":
 
     from matplotlib.pyplot import *
 
-    npoints = 20000
-    ndim = 3
-    points = (npoints*np.random.random((npoints, ndim)))
+    N = 1000
+    ndim = 4
+    points = (N*np.random.random((N, ndim)))
     s = time.time()
     rank = rankn(points)
     print(time.time() - s)
