@@ -1,111 +1,71 @@
 import numpy as np
-import time
 
-
-def rank2_mod(points, mask):
-    npoints = points.shape[0]
-    if npoints == 1:
+def _rank2(points, mask):
+    N = points.shape[0]
+    N2 = N//2
+    if N == 1:
         return 0
     else:
-        med = np.median(points[:,0])
-        idxA = points[:,0] <= med
-        A = points[idxA]
-        B = points[~idxA]
-        rank_A = rank2_mod(A, mask[idxA])
-        rank_B = rank2_mod(B, mask[~idxA])
-        idxY = np.argsort(points[:,1])
+        idx = np.argpartition(points[:,0], N2)
+        idxA_ = idx[:N2]
+        idxA = np.zeros(N, dtype=bool)
+        idxA[idxA_] = True
+        NAm = np.sum(idxA & mask)
+        points_reduced = np.vstack((points[idxA & mask], points[~idxA & ~mask]))
+        count_points = np.zeros(points_reduced.shape[0], dtype=bool)
+        count_points[:NAm] = True
+        idxY = np.argsort(points_reduced[:,1])
         idxYr = np.zeros_like(idxY)
         idxYr[idxY] = np.arange(idxY.shape[0]) # inverse of idxY
-        rank = np.zeros(npoints, dtype=int)
-        numA = np.cumsum((idxA*mask)[idxY])[idxYr]
-        rank[idxA] = rank_A
-        rank[~idxA] = rank_B + numA[~idxA]
+        count_points = count_points[idxY]
+        numA = np.cumsum(count_points)[idxYr]
+        rank = np.zeros(N)
+        rank[idxA] = _rank2(points[idxA], mask[idxA])
+        rank[~idxA] = _rank2(points[~idxA], mask[~idxA])
+        rank[~idxA & ~mask] += numA[NAm:]
         return rank
 
-def rank2(points):
-    npoints = points.shape[0]
-    if npoints == 1:
-        return 0
-    else:
-        med = np.median(points[:,0])
-        idxA = points[:,0] <= med
-        A = points[idxA]
-        B = points[~idxA]
-        rank_A = rank2(A)
-        rank_B = rank2(B)
-        idxY = np.argsort(points[:,1])
-        idxYr = np.zeros_like(idxY)
-        idxYr[idxY] = np.arange(idxY.shape[0]) # inverse of idxY
-        rank = np.zeros(npoints, dtype=int)
-        numA = np.cumsum(idxA[idxY])[idxYr]
-        rank[idxA] = rank_A
-        rank[~idxA] = rank_B + numA[~idxA]
-        return rank
-
-def rankn_mod(points, mask):
-    npoints = points.shape[0]
-    if npoints == 1:
+def rankn(points, mask=None):
+    N = points.shape[0]
+    N2 = N//2
+    if mask is None:
+        mask = np.ones(N, dtype=bool)
+    if N == 1:
         return 0
     else:
         if points.shape[1] == 2:
-            return rank2_mod(points, mask)
-    med = np.median(points[:,0])
-    idxA = points[:,0] <= med
-    A = points[idxA]
-    B = points[~idxA]
-    rank_A = rankn_mod(A, mask[idxA])
-    rank_B = rankn_mod(B, mask[~idxA])
-    rank = np.zeros(npoints, dtype=int)
-    rank[idxA] = rank_A
-    rank[~idxA] = rank_B + rankn_mod(points[:,1:], idxA*mask)[~idxA] # this needs to be modified.  It computes the total rank, not just the dominated As.
-    return rank
-
-def rankn(points):
-    npoints = points.shape[0]
-    if npoints == 1:
-        return 0
-    else:
-        if points.shape[1] == 2:
-            return rank2(points)
-    med = np.median(points[:,0])
-    idxA = points[:,0] <= med
-    A = points[idxA]
-    B = points[~idxA]
-    rank_A = rankn(A)
-    rank_B = rankn(B)
-    rank = np.zeros(npoints, dtype=int)
-    rank[idxA] = rank_A
-    rank[~idxA] = rank_B + rankn_mod(points[:,1:], idxA)[~idxA] # this needs to be modified.  It computes the total rank, not just the dominated As.
-    return rank
-    
-def naive(points):
-    # a naive O(n^2) Implementation for validation
-    npoints = points.shape[0]
-    rank = np.zeros(npoints, dtype=int)
-    for i in range(npoints):
-        rank[i] = np.sum(np.all(points[i] > points, axis=1))
+            return _rank2(points, mask)
+    idx = np.argpartition(points[:,0], N2)
+    idxA_ = idx[:N2]
+    idxA = np.zeros(N, dtype=bool)
+    idxA[idxA_] = True
+    rank = np.zeros(N, dtype=int)
+    rank[idxA] = rankn(points[idxA], mask[idxA])
+    rank[~idxA] = rankn(points[~idxA], mask[~idxA]) + rankn(points[:,1:], idxA*mask)[~idxA] # this needs to be modified.  It computes the total rank, not just the dominated As.
     return rank
 
 
 if __name__ == "__main__":
 
-    # type "%matplotlib qt" in jupyter input for interactive plots
+    import time
 
-    from matplotlib.pyplot import *
+    def rank_naive(points):
+        # a naive O(N^2) Implementation for validation
+        N = points.shape[0]
+        rank = np.zeros(N, dtype=int)
+        for i in range(N):
+            rank[i] = np.sum(np.all(points[i] > points, axis=1))
+        return rank
 
-    npoints = 100
-    ndim = 5
-    points = (npoints*np.random.random((npoints, ndim)))
+    N = 50000
+    ndim = 3
+    points = (N*np.random.random((N, ndim)))
     s = time.time()
     rank = rankn(points)
-    print(time.time() - s)
-    fig = figure()
-    ax = fig.add_subplot(projection='3d')
-    #ax.scatter(points[:,0], points[:,1], points[:,2], c=rank)
+    print(f'Multidimensional divide & conquer: {time.time() - s} s')
 
     s = time.time()
-    rank_naive = naive(points)
-    print(time.time() - s)
-    #ax.scatter(points[:,0], points[:,1], points[:,2], c=rank_naive)
+    rank_n = rank_naive(points)
+    print(f'Naive implementation: {time.time() - s} s')
 
-    # 2d algorithm works perfectly, but not 3d
+    assert all((rank - rank_n) == 0)
