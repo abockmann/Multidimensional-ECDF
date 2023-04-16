@@ -64,15 +64,15 @@ if __name__ == "__main__":
     import time
 
     def rank_naive(points):
-        # a naive O(N^2) Implementation for validation
+        # a naive O(N^2) implementation for validation
         N = points.shape[0]
         rank = np.zeros(N, dtype=int)
         for i in range(N):
             rank[i] = np.sum(np.all(points[i] > points, axis=1))
         return rank
 
-    N = 10000
-    ndim = 2
+    N = 100000
+    ndim = 3
     points = np.random.random((N, ndim))
     s = time.time()
     rank = rankn(points)
