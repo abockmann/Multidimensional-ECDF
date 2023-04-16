@@ -55,7 +55,7 @@ def rankn(points, mask=None):
     idxA[idxA_] = True
     rank = np.zeros(N, dtype=int)
     rank[idxA] = rankn(points[idxA], mask[idxA])
-    rank[~idxA] = rankn(points[~idxA], mask[~idxA]) + rankn(points[:,1:], idxA*mask)[~idxA] # this needs to be modified.  It computes the total rank, not just the dominated As.
+    rank[~idxA] = rankn(points[~idxA], mask[~idxA]) + rankn(points[:,1:], idxA*mask)[~idxA]
     return rank
 
 
@@ -73,7 +73,7 @@ if __name__ == "__main__":
 
     N = 10000
     ndim = 2
-    points = (N*np.random.random((N, ndim)))
+    points = np.random.random((N, ndim))
     s = time.time()
     rank = rankn(points)
     print(f'Multidimensional divide & conquer: {time.time() - s} s')
