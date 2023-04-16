@@ -71,8 +71,8 @@ if __name__ == "__main__":
             rank[i] = np.sum(np.all(points[i] > points, axis=1))
         return rank
 
-    N = 100000
-    ndim = 3
+    N = 10000
+    ndim = 2
     points = np.random.random((N, ndim))
     s = time.time()
     rank = rankn(points)
